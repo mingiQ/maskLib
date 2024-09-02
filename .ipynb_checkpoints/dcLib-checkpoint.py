@@ -10,9 +10,7 @@ Library for drawing standard components for DC measurements (Four probe resistan
 import maskLib.MaskLib as m
 from dxfwrite import DXFEngine as dxf
 from dxfwrite import const
-from maskLib.Entities import SolidPline, SkewRect, CurveRect, RoundRect, InsideCurve
-from maskLib.utilities import kwargStrip, curveAB
-from maskLib.microwaveLib import Strip_straight, Strip_stub_open, Strip_taper, Strip_bend
+from maskLib.microwaveLib import Strip_straight, Strip_stub_open
 from maskLib.microwaveLib import CPW_stub_open,CPW_stub_short,CPW_straight
 
 
@@ -167,54 +165,50 @@ def nw_JJ(chip,structure, J_length=0.15, J_width1=[5,1], J_width2 = [1, 1], lead
     #struct().shiftPos(-length/2-pad)
     #starting point: set the center of the JJ as (0,0)
     
-    struct().translatePos(vector=(-J_width1[0]-J_width2[0]-taper[0]-J_length/2, 0))
+    struct().translatePos(vector=(-J_width1[0]-taper[0]-J_length/2, 0))
     #struct.shiftPos(distance=0, angle=45, newDir=None)
     srBar=struct().clone()
-    Strip_straight(chip, srBar, J_width1[0], w=lead_d[1], layer=secondlayer)
-    Strip_taper(chip, srBar, length=taper[0], w0=lead_d[1], w1=lead_d[0], layer=secondlayer)
-    Strip_straight(chip,srBar, J_width2[0], w=lead_d[0], layer=secondlayer)
+    Strip_straight(self,srBar, J_width1[0], w=lead_d[1])
+    Strip_taper(self, srBar, length=taper[0], w0=lead_d[1], w1=lead_d[0])
+    Strip_straight(self,srBar, J_width2[0], w=lead_d[0])
 
     srBar.translatePos(vector=(J_length, 0))
     srBar1=srBar.clone()
 
-    Strip_straight(chip,srBar1, J_width2[1], w=lead_d[0], layer=secondlayer)
-    Strip_taper(chip, srBar1, length=taper[1], w0=lead_d[0], w1=lead_d[1], layer=secondlayer)
-    Strip_straight(chip,srBar1, J_width1[1], w=lead_d[1], layer=secondlayer)
+    Strip_straight(self,srBar1, J_width2[1], w=lead_d[0])
+    Strip_taper(self, srBar1, length=taper[1], w0=lead_d[0], w1=lead_d[1])
+    Strip_straight(self,srBar1, J_width1[1], w=lead_d[1])
 
-def split_gate(chip, structure, sg_h=5, length=10, d = 1, w0=5, s0=2,  w1=9, s1=5, loop = [70, 30], r_out=50, layer='GATES',bgcolor=None, **kwargs):
+def split_gate(chip, structure, length=10, d = 1, w0=5, s0=2,  w1=9, s1=5, loop = [70, 30], r_out=50,secondlayer='SECONDLAYER',bgcolor=None):
+   '''
+    Split gate for confining the supercurrent channel: refer https://arxiv.org/abs/2408.08487 
+    
+   '''
+
     def struct():
         if isinstance(structure,m.Structure):
             return structure
         elif isinstance(structure,tuple):
             return m.Structure(chip,structure)
         else:
-            return m.Structure(chip,structure)
-        
+            return chip.structure(structure)
     if bgcolor is None:
         bgcolor = chip.wafer.bg()
-    '''
-     Split gate for confining the supercurrent channel: refer https://arxiv.org/abs/2408.08487 
-     
-    '''
-    # first add split electrode
-    CPW_straight(chip, struct().getPos((0,-w0/2+(s1-2*s0)/2)), length=d, w=(s1-2*s0), s=sg_h, layer=layer)
-    
-    # taper the eletrode (right side)
-    chip.add(SkewRect(struct().getPos((d,-w0/2)),length,s0,(0, s1-s0),s1,rotation=struct().direction,valign=const.TOP,edgeAlign=const.TOP,bgcolor=bgcolor, layer=layer, **kwargStrip(kwargs)),structure=struct(),offsetVector=(length+d, -w0/2-s0+s1/2))
-    # start from the right side of the split gate
-    Strip_straight(chip,struct(), loop[0]/2-length-d/2, w=s1, layer=layer)
+        
+    #offset=[0,6]
+    self.add(SkewRect(struct().getPos((d,-w0/2)),length,s0,(0, s1-s0),s1,rotation=struct().direction,valign=const.TOP,edgeAlign=const.TOP,bgcolor=bgcolor),structure=struct(),offsetVector=(length+d, -w0/2-s0+s1/2))
+    Strip_straight(self,struct(), loop[0]/2-length-d, w=s1)
     #print(struct.getPos())
-    Strip_bend(chip, struct(), angle=90, CCW=False, w=s1, radius=s1, layer=layer)
+    Strip_bend(self, struct(), angle=90, CCW=False, w=s1, radius=s1)
     #print(struct.getPos())
-    Strip_straight(chip, struct(), loop[1], w=s1, layer=layer) 
-    Strip_bend(chip, struct(), angle=90, CCW=False, w=s1, radius=s1, layer=layer)
-    Strip_straight(chip, struct(), loop[0], w=s1, layer=layer) 
-    Strip_bend(chip, struct(), angle=90, CCW=False, w=s1, radius=s1, layer=layer)
-    Strip_straight(chip, struct(), loop[1], w=s1, layer=layer) 
-    Strip_bend(chip, struct(), angle=90, CCW=False, w=s1, radius=s1, layer=layer)
-    Strip_straight(chip,struct(), loop[0]/2-length-d/2, w=s1, layer=layer)
-    chip.add(SkewRect(struct()  .getPos((0,-s1/2)),length,s1,(0, s1-s0),s0,rotation=struct().direction,valign=const.BOTTOM,edgeAlign=const.BOTTOM,bgcolor=bgcolor,layer=layer, **kwargStrip(kwargs)),structure=struct(),offsetVector=(length, -w0/2-s0+s1/2))
+    Strip_straight(self, struct(), loop[1], w=s1) 
+    Strip_bend(self, struct(), angle=90, CCW=False, w=s1, radius=s1)
+    Strip_straight(self, struct(), loop[0], w=s1) 
+    Strip_bend(self, struct(), angle=90, CCW=False, w=s1, radius=s1)
+    Strip_straight(self, struct(), loop[1], w=s1) 
+    Strip_bend(self, struct(), angle=90, CCW=False, w=s1, radius=s1)
+    Strip_straight(self,struct(), loop[0]/2-length-d, w=s1)
+    self.add(SkewRect(struct().getPos((0,-w0/2)),length,s1,(0, s1-s0),s0,rotation=struct().direction,valign=const.BOTTOM,edgeAlign=const.BOTTOM,bgcolor=bgcolor),structure=struct(),offsetVector=(length, -w0/2-s0+s1/2))
     #self.add(SkewRect(struct.getPos((0,w0/2)),length,s0,(offset[0],w1/2-w0/2+offset[1]),s1,rotation=struct.direction,valign=const.BOTTOM,edgeAlign=const.BOTTOM,bgcolor=bgcolor),structure=struct,offsetVector=(length+offset[0],offset[1]))
-     
 
 
