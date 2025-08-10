@@ -679,7 +679,7 @@ class Chip7mm(Chip):
             self.structures = structures
         else:
             self.structures = [#hardwired structures
-                    Structure(self,start=(500,self.height/2),direction=0,defaults=self.defaults),
+                    Structure(self,start=(500,self.height/2),direction=0,defaults=self.defaults),   # p1
                     Structure(self,start=(500,700),direction=45,defaults=self.defaults),
                     Structure(self,start=(2500,500),direction=90,defaults=self.defaults),
                     Structure(self,start=(4500,500),direction=90,defaults=self.defaults),
@@ -689,6 +689,34 @@ class Chip7mm(Chip):
                     Structure(self,start=(4500,self.height-500),direction=270,defaults=self.defaults),
                     Structure(self,start=(2500,self.height-500),direction=270,defaults=self.defaults),
                     Structure(self,start=(500,self.height-700),direction=315,defaults=self.defaults)]
+        if wafer.frame:
+            self.add(dxf.rectangle(self.center,6000,6000,layer=wafer.lyr('FRAME'),halign = const.CENTER,valign = const.MIDDLE,linetype='DOT'))
+
+
+class Chip7mmnew(Chip):
+    def __init__(self,wafer,chipID,layer,structures=None,defaults=None):
+        Chip.__init__(self,wafer,chipID,layer,structures=structures)
+        self.defaults = {'w':10, 's':5, 'radius':25,'r_out':0,'r_ins':0}
+        if defaults is not None:
+            #self.defaults = defaults.copy()
+            for d in defaults:
+                self.defaults[d]=defaults[d]
+        if structures is not None:
+            #override default structures
+            self.structures = structures
+
+        else:
+            self.structures = [#hardwired structures
+                    Structure(self,start=(500,self.height/2),direction=0,defaults=self.defaults),   # p1
+                    Structure(self,start=(500,self.height/2-1600),direction=0,defaults=self.defaults),  # p2
+                    Structure(self,start=(self.width/2-1490,500),direction=90,defaults=self.defaults),
+                    Structure(self,start=(self.width/2+1490,500),direction=90,defaults=self.defaults),
+                    Structure(self,start=(self.width-500,self.height/2-1600),direction=180,defaults=self.defaults),
+                    Structure(self,start=(self.width-500,self.height/2),direction=180,defaults=self.defaults),
+                    Structure(self,start=(self.width-500,self.height/2+1600),direction=180,defaults=self.defaults),
+                    Structure(self,start=(self.width/2-1490,self.height-500),direction=270,defaults=self.defaults),
+                    Structure(self,start=(self.width/2+1490,self.height-500),direction=270,defaults=self.defaults),
+                    Structure(self,start=(500,self.height/2+1600),direction=0,defaults=self.defaults)]
         if wafer.frame:
             self.add(dxf.rectangle(self.center,6000,6000,layer=wafer.lyr('FRAME'),halign = const.CENTER,valign = const.MIDDLE,linetype='DOT'))
             
@@ -726,14 +754,15 @@ class Chip10mm(Chip):
             self.add(dxf.rectangle(self.center,6000,6000,layer=wafer.lyr('FRAME'),halign = const.CENTER,valign = const.MIDDLE,linetype='DOT'))
 
 # ===============================================================================
-# 1mm  CHIP CLASS
-#  chip with 24 pins for DC measurements
-#
-# ================================================================================
-class Chip1mm(Chip):
-    def __init__(self, wafer, chipID, layer, structures=None, defaults=None):
-        Chip.__init__(self, wafer, chipID, layer, structures=structures)
-        self.defaults = {'w':10, 's':5, 'pad': 150, 'radius':25, 'r_out':0, 'r_ins':0}
+#  12mm CHIP CLASS  
+#       chip with 8 structures corresponding to the launcher positions
+#       NOTE: chip size still needs to be set in the wafer settings, this just determines structure location
+# ===============================================================================
+
+class Chip12mm(Chip):
+    def __init__(self,wafer,chipID,layer,structures=None,defaults=None):
+        Chip.__init__(self,wafer,chipID,layer,structures=structures)
+        self.defaults = {'w':10, 's':5, 'radius':25,'r_out':0,'r_ins':0}
         if defaults is not None:
             #self.defaults = defaults.copy()
             for d in defaults:
@@ -742,36 +771,23 @@ class Chip1mm(Chip):
             #override default structures
             self.structures = structures
         else:
-            spacing = (1000-self.defaults['pad'])/5
-            quad = (1000-self.defaults['pad'])/2
             self.structures = [#hardwired structures
-                    #max 20 contact 150um x 150um DC contact pads -- based on Jian's data
-                    Structure(self,start=(-quad,quad),             direction=0,defaults=self.defaults),
-                    Structure(self,start=(-quad+spacing,quad),             direction=0,defaults=self.defaults),
-                    Structure(self,start=(-quad+spacing*2,quad),             direction=0,defaults=self.defaults),
-                    Structure(self,start=(-quad+spacing*3,quad),             direction=0,defaults=self.defaults),
-                    Structure(self,start=(-quad+spacing*4,quad),             direction=0,defaults=self.defaults),
-                    Structure(self,start=(-quad+spacing*5,quad),             direction=0,defaults=self.defaults),
-                    Structure(self,start=(quad,quad-spacing),               direction=0,defaults=self.defaults),
-                    Structure(self,start=(quad,quad-spacing*2),               direction=0,defaults=self.defaults),
-                    Structure(self,start=(quad,quad-spacing*3),               direction=0,defaults=self.defaults),
-                    Structure(self,start=(quad,quad-spacing*4),               direction=0,defaults=self.defaults),
-                    Structure(self,start=(quad,quad-spacing*5),               direction=0,defaults=self.defaults),
-                    Structure(self,start=(quad-spacing,-quad),            direction=0,defaults=self.defaults),
-                    Structure(self,start=(quad-spacing*2,-quad),            direction=0,defaults=self.defaults),
-                    Structure(self,start=(quad-spacing*3,-quad),            direction=0,defaults=self.defaults),
-                    Structure(self,start=(quad-spacing*4,-quad),            direction=0,defaults=self.defaults),
-                    Structure(self,start=(quad-spacing*5,-quad),            direction=0,defaults=self.defaults),
-                    Structure(self,start=(-quad,-quad+spacing),          direction=0,defaults=self.defaults),
-                    Structure(self,start=(-quad,-quad+spacing*2),          direction=0,defaults=self.defaults),
-                    Structure(self,start=(-quad,-quad+spacing*3),          direction=0,defaults=self.defaults),
-                    Structure(self,start=(-quad,-quad+spacing*4),          direction=0,defaults=self.defaults)
-                    ]
+                    #TODO update these for 10mm IBM board
+                    Structure(self,start=(500,self.height/2),direction=0,defaults=self.defaults),
+                    Structure(self,start=(500,700),direction=45,defaults=self.defaults),
+                    Structure(self,start=(2500,500),direction=90,defaults=self.defaults),
+                    Structure(self,start=(4500,500),direction=90,defaults=self.defaults),
+                    Structure(self,start=(self.width-500,700),direction=135,defaults=self.defaults),
+                    Structure(self,start=(self.width-500,self.height/2),direction=180,defaults=self.defaults),
+                    Structure(self,start=(self.width-500,self.height-700),direction=225,defaults=self.defaults),
+                    Structure(self,start=(4500,self.height-500),direction=270,defaults=self.defaults),
+                    Structure(self,start=(2500,self.height-500),direction=270,defaults=self.defaults),
+                    Structure(self,start=(500,self.height-700),direction=315,defaults=self.defaults)]
         if wafer.frame:
-            self.add(dxf.rectangle(self.center,1000,1000,layer=wafer.lyr('FRAME'),halign = const.CENTER,valign = const.MIDDLE,linetype='DOT'))
+            self.add(dxf.rectangle(self.center,10000,10000,layer=wafer.lyr('FRAME'),halign = const.CENTER,valign = const.MIDDLE,linetype='DOT'))
 
-            
-        
+
+
 # ===============================================================================
 #  LARGE MARKER CHIP CLASS  
 #       chip with large centered rectangle for high visibility

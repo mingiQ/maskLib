@@ -10,9 +10,7 @@ Library for drawing standard components for DC measurements (Four probe resistan
 import maskLib.MaskLib as m
 from dxfwrite import DXFEngine as dxf
 from dxfwrite import const
-from maskLib.Entities import SolidPline, SkewRect, CurveRect, RoundRect, InsideCurve
-from maskLib.utilities import kwargStrip, curveAB
-from maskLib.microwaveLib import Strip_straight, Strip_stub_open, Strip_taper, Strip_bend
+from maskLib.microwaveLib import Strip_straight, Strip_stub_open
 from maskLib.microwaveLib import CPW_stub_open,CPW_stub_short,CPW_straight
 
 
@@ -114,107 +112,3 @@ def ResistanceBar(chip,structure,length=1500,width=40,pad=600,r_out=50,secondlay
     Strip_straight(chip,srBar,pad,w=pad,layer=secondlayer)
     Strip_straight(chip, srBar, length, w=width,layer=secondlayer)
     Strip_straight(chip,srBar,pad,w=pad,layer=secondlayer)
-
-
-def Extended_JJ(chip,structure,J_length=0.15, J_width=2, J_width1=3, lead_d=0.3, r_out=50,secondlayer='SECONDLAYER',bgcolor=None):
-    #write a resistance bar centered on the structure or position specified. Defaults to pointing in direction of current structure
-    '''
-    J_length = junction length, um
-    J_width = junction width, um
-    lead_width = lead width, um
-    '''
-    def struct():
-        if isinstance(structure,m.Structure):
-            return structure
-        elif isinstance(structure,tuple):
-            return m.Structure(chip,structure)
-        else:
-            return chip.structure(structure)
-    if bgcolor is None:
-        bgcolor = chip.wafer.bg()
-    
-    #struct().shiftPos(-length/2-pad)
-    #starting point: set the center of the JJ as (0,0)
-    struct().translatePos(vector=(-J_width1-J_width/2, (lead_d+J_length)/2))
-    srBar=struct().clone()
-    
-    Strip_straight(chip,srBar, J_width1+J_width, w=lead_d, layer=secondlayer)
-
-    srBar.translatePos(vector=(-J_width, -(lead_d+J_length)))
-    srBar1=srBar.clone()
-    
-    Strip_straight(chip,srBar1, J_width1+J_width, w=lead_d, layer=secondlayer)
-    #Strip_straight(chip,srBar,pad,w=pad,layer=secondlayer)
-
-def nw_JJ(chip,structure, J_length=0.15, J_width1=[5,1], J_width2 = [1, 1], lead_d=[0.05, 0.3], taper= [2,2], r_out=50,secondlayer='SECONDLAYER',bgcolor=None):
-    #write a resistance bar centered on the structure or position specified. Defaults to pointing in direction of current structure
-    '''
-    J_length = junction length, um
-    J_width1 = [left lead length, right lead length] um
-    lead_d = [junction width (narrow), tapered lead (wide)] um
-    taper = [left tapered length, right tapered length]
-    '''
-    def struct():
-        if isinstance(structure,m.Structure):
-            return structure
-        elif isinstance(structure,tuple):
-            return m.Structure(chip,structure)
-        else:
-            return chip.structure(structure)
-    if bgcolor is None:
-        bgcolor = chip.wafer.bg()
-    
-    #struct().shiftPos(-length/2-pad)
-    #starting point: set the center of the JJ as (0,0)
-    
-    struct().translatePos(vector=(-J_width1[0]-J_width2[0]-taper[0]-J_length/2, 0))
-    #struct.shiftPos(distance=0, angle=45, newDir=None)
-    srBar=struct().clone()
-    Strip_straight(chip, srBar, J_width1[0], w=lead_d[1], layer=secondlayer)
-    Strip_taper(chip, srBar, length=taper[0], w0=lead_d[1], w1=lead_d[0], layer=secondlayer)
-    Strip_straight(chip,srBar, J_width2[0], w=lead_d[0], layer=secondlayer)
-
-    srBar.translatePos(vector=(J_length, 0))
-    srBar1=srBar.clone()
-
-    Strip_straight(chip,srBar1, J_width2[1], w=lead_d[0], layer=secondlayer)
-    Strip_taper(chip, srBar1, length=taper[1], w0=lead_d[0], w1=lead_d[1], layer=secondlayer)
-    Strip_straight(chip,srBar1, J_width1[1], w=lead_d[1], layer=secondlayer)
-
-def split_gate(chip, structure, sg_h=5, length=10, d = 1, w0=5, s0=2,  w1=9, s1=5, loop = [70, 30], r_out=50, layer='GATES',bgcolor=None, **kwargs):
-    def struct():
-        if isinstance(structure,m.Structure):
-            return structure
-        elif isinstance(structure,tuple):
-            return m.Structure(chip,structure)
-        else:
-            return m.Structure(chip,structure)
-        
-    if bgcolor is None:
-        bgcolor = chip.wafer.bg()
-    '''
-     Split gate for confining the supercurrent channel: refer https://arxiv.org/abs/2408.08487 
-     
-    '''
-    # first add split electrode
-    CPW_straight(chip, struct().getPos((0,-w0/2+(s1-2*s0)/2)), length=d, w=(s1-2*s0), s=sg_h, layer=layer)
-    
-    # taper the eletrode (right side)
-    chip.add(SkewRect(struct().getPos((d,-w0/2)),length,s0,(0, s1-s0),s1,rotation=struct().direction,valign=const.TOP,edgeAlign=const.TOP,bgcolor=bgcolor, layer=layer, **kwargStrip(kwargs)),structure=struct(),offsetVector=(length+d, -w0/2-s0+s1/2))
-    # start from the right side of the split gate
-    Strip_straight(chip,struct(), loop[0]/2-length-d/2, w=s1, layer=layer)
-    #print(struct.getPos())
-    Strip_bend(chip, struct(), angle=90, CCW=False, w=s1, radius=s1, layer=layer)
-    #print(struct.getPos())
-    Strip_straight(chip, struct(), loop[1], w=s1, layer=layer) 
-    Strip_bend(chip, struct(), angle=90, CCW=False, w=s1, radius=s1, layer=layer)
-    Strip_straight(chip, struct(), loop[0], w=s1, layer=layer) 
-    Strip_bend(chip, struct(), angle=90, CCW=False, w=s1, radius=s1, layer=layer)
-    Strip_straight(chip, struct(), loop[1], w=s1, layer=layer) 
-    Strip_bend(chip, struct(), angle=90, CCW=False, w=s1, radius=s1, layer=layer)
-    Strip_straight(chip,struct(), loop[0]/2-length-d/2, w=s1, layer=layer)
-    chip.add(SkewRect(struct()  .getPos((0,-s1/2)),length,s1,(0, s1-s0),s0,rotation=struct().direction,valign=const.BOTTOM,edgeAlign=const.BOTTOM,bgcolor=bgcolor,layer=layer, **kwargStrip(kwargs)),structure=struct(),offsetVector=(length, -w0/2-s0+s1/2))
-    #self.add(SkewRect(struct.getPos((0,w0/2)),length,s0,(offset[0],w1/2-w0/2+offset[1]),s1,rotation=struct.direction,valign=const.BOTTOM,edgeAlign=const.BOTTOM,bgcolor=bgcolor),structure=struct,offsetVector=(length+offset[0],offset[1]))
-     
-
-
